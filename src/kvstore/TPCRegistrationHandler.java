@@ -75,8 +75,8 @@ public class TPCRegistrationHandler implements NetworkHandler {
         	try {
 				KVMessage msg = new KVMessage(slave);
 				String addr = msg.getMessage();
-				master.registerSlave(new TPCSlaveInfo(addr));
-				resp = new KVMessage(KVConstants.RESP,"Successfully registered "+addr);
+				if(master.registerSlave(new TPCSlaveInfo(addr)))
+					resp = new KVMessage(KVConstants.RESP,"Successfully registered "+addr);
 			} catch (Exception e) {
 				resp = null;
 			}

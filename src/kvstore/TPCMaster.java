@@ -13,6 +13,8 @@ public class TPCMaster {
 
     public static final int TIMEOUT = 3000;
 
+    ArrayList<TPCSlaveInfo> slaves;
+    
     /**
      * Creates TPCMaster, expecting numSlaves slave servers to eventually register
      *
@@ -23,6 +25,8 @@ public class TPCMaster {
         this.numSlaves = numSlaves;
         this.masterCache = cache;
         // implement me
+        
+        slaves = new ArrayList<TPCSlaveInfo>();
     }
 
     /**
@@ -31,9 +35,27 @@ public class TPCMaster {
      * it comes back online.
      *
      * @param slave the slaveInfo to be registered
+     * @return whether the slave is successfully registered (modified by: Yi Wu)
      */
-    public void registerSlave(TPCSlaveInfo slave) {
-        // implement me
+    public boolean registerSlave(TPCSlaveInfo slave) {
+    	// TODO: I slightly modified the API here!
+    	//       original version is void, now I change to boolean
+    	synchronized(this) {
+    		for(int i=0;i<slaves.size();++i) {
+    			if(slaves.get(i).getSlaveID() == slave.getSlaveID()) {
+    				slaves.set(i, slave);
+    				return true;
+    			}
+    			if(isLessThanUnsigned(slave.getSlaveID(), slaves.get(i).getSlaveID())) {
+    				if(slaves.size() == numSlaves) return false;
+    				slaves.add(i, slave);
+    				return true;
+    			}
+    		}
+    		if(slaves.size() == numSlaves) return false;
+    		slaves.add(slave); // add the slave at the end of the array
+    		return true;
+    	}
     }
 
     /**
@@ -77,14 +99,39 @@ public class TPCMaster {
     }
 
     /**
+     * added by: Yi Wu
+     * find the index of the primary replica for a given key
+     *   using binary search
+     * 
+     * @param hash value of the input hey
+     * @return the index of the desired replica, -1 if no replica available
+     */
+    private int findFirstReplicaIndex(long hash) {
+    	if (slaves.size() <= 1) return slaves.size() - 1;
+    	if(isLessThanEqualUnsigned(hash, slaves.get(0).getSlaveID())
+    		|| !isLessThanEqualUnsigned(hash, slaves.get(slaves.size()-1).getSlaveID()))
+    		return 0;
+    	int lo = 0, hi = slaves.size() - 1, mid; // binary search
+    	while(lo + 1 < hi) {
+    		mid = (lo + hi) >> 1;
+    		if(isLessThanEqualUnsigned(hash, slaves.get(mid).getSlaveID()))
+    			hi = mid;
+    		else
+    			lo = mid;
+    	}
+    	return hi;
+    }
+    
+    /**
      * Find primary replica for a given key.
      *
      * @param key String to map to a slave server replica
      * @return SlaveInfo of first replica
      */
     public TPCSlaveInfo findFirstReplica(String key) {
-        // implement me
-        return null;
+    	int pos = findFirstReplicaIndex(hashTo64bit(key));
+    	if(pos < 0) return null;
+        return slaves.get(pos);
     }
 
     /**
@@ -94,8 +141,11 @@ public class TPCMaster {
      * @return SlaveInfo of successor replica
      */
     public TPCSlaveInfo findSuccessor(TPCSlaveInfo firstReplica) {
-        // implement me
-        return null;
+        int pos = findFirstReplicaIndex(firstReplica.getSlaveID());
+        if(pos < 0) return null;
+        pos ++;
+        if(pos == slaves.size()) pos = 0;
+        return slaves.get(pos);
     }
 
     /**

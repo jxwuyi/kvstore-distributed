@@ -30,7 +30,8 @@ public class TPCClientHandler implements NetworkHandler {
      * @param connections number of threads in threadPool to service requests
      */
     public TPCClientHandler(TPCMaster tpcMaster, int connections) {
-        // implement me
+    	this.tpcMaster = tpcMaster;
+    	threadPool = new ThreadPool(connections);
     }
 
     /**
@@ -41,7 +42,11 @@ public class TPCClientHandler implements NetworkHandler {
      */
     @Override
     public void handle(Socket client) {
-        // implement me
+    	try {
+			threadPool.addJob(new ClientHandler(client));
+		} catch (InterruptedException e) {
+			// ignore
+		}
     }
 
     /**
@@ -67,7 +72,33 @@ public class TPCClientHandler implements NetworkHandler {
          */
         @Override
         public void run() {
-            // implement me
+        	KVMessage resp = null;
+        	try {
+				KVMessage req = new KVMessage(client);
+				if(KVConstants.GET_REQ.equals(req.getMsgType())) { // get
+					String value = tpcMaster.handleGet(req);
+					resp = new KVMessage(KVConstants.RESP);
+					resp.setKey(req.getKey());
+					resp.setValue(value);
+				} else
+				if(KVConstants.PUT_REQ.equals(req.getMsgType())) { // put
+					tpcMaster.handleTPCRequest(req, true);
+					resp = new KVMessage(KVConstants.RESP,KVConstants.SUCCESS);
+				} else
+				if(KVConstants.DEL_REQ.equals(req.getMsgType())) { // del
+					tpcMaster.handleTPCRequest(req, false);
+					resp = new KVMessage(KVConstants.RESP,KVConstants.SUCCESS);
+				}
+			} catch (KVException e) {
+				resp = new KVMessage(e.getKVMessage());
+			}
+        	if(resp != null) {
+            	try {
+					resp.sendMessage(client);
+				} catch (KVException e) {
+					// nothing can be done
+				}
+            }
         }
     }
 
