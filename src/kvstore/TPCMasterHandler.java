@@ -2,6 +2,7 @@ package kvstore;
 
 import static kvstore.KVConstants.*;
 
+import java.io.IOException;
 import java.net.Socket;
 /**
  * Implements NetworkHandler to handle 2PC operation requests from the Master/
@@ -55,7 +56,35 @@ public class TPCMasterHandler implements NetworkHandler {
      */
     public void registerWithMaster(String masterHostname, SocketServer server)
             throws KVException {
-        // implement me
+    	String addr = Long.toString(slaveID)+"@"+server.getHostname()+Integer.toString(server.getPort()); 
+    	KVMessage reg = new KVMessage(KVConstants.REGISTER, addr);
+    	Socket sock = null;
+    	try {
+    		// Note: By instruction, master always listern for registration at port 9090
+    		sock = new Socket(masterHostname, 9090); // TODO: rewrite 9090 by some constant number
+    	} catch(IOException e) {
+    		throw new KVException(KVConstants.ERROR_COULD_NOT_CONNECT);
+    	} catch(Exception e) {
+    		throw new KVException(KVConstants.ERROR_COULD_NOT_CREATE_SOCKET);
+    	} 
+    	
+    	try {
+	    	reg.sendMessage(sock); // send register request
+	    	
+	    	KVMessage resp = new KVMessage(sock); // receive response
+	    	String expectedMsg = "Successfully registered " + addr;
+	    	if (!KVConstants.RESP.equals(resp.getMsgType())
+	    		|| !expectedMsg.equals(resp.getMessage())) {
+	    		throw new KVException(KVConstants.ERROR_INVALID_FORMAT);
+	    	}
+    	} finally {
+    		try {
+				sock.close();
+			} catch (IOException e) {
+				// ignore, best effort
+			}
+    	}
+    	
     }
 
     /**
