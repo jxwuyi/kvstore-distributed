@@ -108,6 +108,29 @@ public class KVMessage implements Serializable {
 	    			throw new KVException(KVConstants.ERROR_INVALID_FORMAT);
 	    		
 	    	} else
+	    	if(msgType.equals(KVConstants.REGISTER)) { // register
+	    		message = doc.getElementsByTagName("Message").item(0).getTextContent();
+	    		
+	    		if(message == null || !message.contains("@") || !message.contains(":"))
+	    			throw new KVException(KVConstants.ERROR_INVALID_FORMAT);
+	    	} else
+	    	if(msgType.equals(KVConstants.READY)) { // ready vote
+	    		// do nothing
+		    } else
+		    if(msgType.equals(KVConstants.ABORT)) { // abort vote || abort decision
+		    	if(doc.getElementsByTagName("Message").getLength() > 0) { // abort vote
+		    		message = doc.getElementsByTagName("Message").item(0).getTextContent();
+		    		if(message == null)
+		    			throw new KVException(KVConstants.ERROR_INVALID_FORMAT);
+		    	}
+		    	// otherwise abort decision
+		    } else
+		    if(msgType.equals(KVConstants.COMMIT)) { // commit decision
+		    	// do nothing
+			} else
+			if(msgType.equals(KVConstants.ACK)) { // ack
+			    // do nothing
+			} else
 	    	if(msgType.equals(KVConstants.RESP)) { // response
 	    		if(doc.getElementsByTagName("Message").getLength() > 0)
 	    			message = doc.getElementsByTagName("Message").item(0).getTextContent();
@@ -196,11 +219,11 @@ public class KVMessage implements Serializable {
 	    		value.appendChild(doc.createTextNode(this.value));
 	    		msg.appendChild(value);
     		}
-		} else {			
-			if(key == null) // every request has a field of key 
-				throw new KVException(KVConstants.ERROR_INVALID_FORMAT);
-			
+		} else {
 			if(msgType.equals(KVConstants.PUT_REQ)) { // put
+				if(key == null)
+	    			throw new KVException(KVConstants.ERROR_INVALID_FORMAT);
+				
 				Element key = doc.createElement("Key");
 	    		key.appendChild(doc.createTextNode(this.key));
 	    		msg.appendChild(key);
@@ -211,15 +234,40 @@ public class KVMessage implements Serializable {
 	    		value.appendChild(doc.createTextNode(this.value));
 	    		msg.appendChild(value);
 			} else
-			if(msgType.equals(KVConstants.GET_REQ)) { // put
+			if(msgType.equals(KVConstants.GET_REQ)) { // get
+				if(key == null)
+	    			throw new KVException(KVConstants.ERROR_INVALID_FORMAT);
+				
 				Element key = doc.createElement("Key");
 	    		key.appendChild(doc.createTextNode(this.key));
 	    		msg.appendChild(key);
 			} else
-			if(msgType.equals(KVConstants.DEL_REQ)) { // put
+			if(msgType.equals(KVConstants.DEL_REQ)) { // del
+				if(key == null)
+	    			throw new KVException(KVConstants.ERROR_INVALID_FORMAT);
+				
 				Element key = doc.createElement("Key");
 	    		key.appendChild(doc.createTextNode(this.key));
 	    		msg.appendChild(key);
+			} else
+			if(msgType.equals(KVConstants.REGISTER)) { // register
+				if(message == null)
+					throw new KVException(KVConstants.ERROR_INVALID_FORMAT);
+				Element message = doc.createElement("Message");
+    			message.appendChild(doc.createTextNode(this.message));
+    			msg.appendChild(message);
+			} else
+			if(msgType.equals(KVConstants.ABORT)) { // abort vote || abort decision
+				if(message != null) {
+					Element message = doc.createElement("Message");
+	    			message.appendChild(doc.createTextNode(this.message));
+	    			msg.appendChild(message);
+				}
+			} else
+			if(msgType.equals(KVConstants.READY) // ready vote
+				|| msgType.equals(KVConstants.COMMIT) // commit decision
+				|| msgType.equals(KVConstants.ACK)) { // ack
+				// do nothing
 			} else
 				// invalid request type
 				throw new KVException(KVConstants.ERROR_INVALID_FORMAT);
@@ -328,6 +376,4 @@ public class KVMessage implements Serializable {
             throw new RuntimeException("Error converting to String", ex);
         }
     }
-
-
 }
