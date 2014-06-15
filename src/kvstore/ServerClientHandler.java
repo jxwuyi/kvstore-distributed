@@ -75,7 +75,14 @@ public class ServerClientHandler implements NetworkHandler {
         	KVMessage resp = null;
             try {
 				KVMessage msg = new KVMessage(client);
+				
+				if(msg.getKey() == null || msg.getKey().length() == 0)
+					throw new KVException(KVConstants.ERROR_INVALID_KEY);
+				
 				if(msg.getMsgType().equals(KVConstants.PUT_REQ)) { // put
+					if(msg.getValue() == null || msg.getValue().length() == 0)
+						throw new KVException(KVConstants.ERROR_INVALID_VALUE);
+					
 					kvServer.put(msg.getKey(), msg.getValue());
 					resp = new KVMessage(KVConstants.RESP,KVConstants.SUCCESS);
 				} else
