@@ -56,7 +56,7 @@ public class TPCMasterHandler implements NetworkHandler {
      */
     public void registerWithMaster(String masterHostname, SocketServer server)
             throws KVException {
-    	String addr = Long.toString(slaveID)+"@"+server.getHostname()+Integer.toString(server.getPort()); 
+    	String addr = Long.toString(slaveID)+"@"+server.getHostname()+":"+Integer.toString(server.getPort()); 
     	KVMessage reg = new KVMessage(KVConstants.REGISTER, addr);
     	Socket sock = null;
     	try {
