@@ -80,7 +80,12 @@ public class MultipleClientTest {
 		thread1.start();
 
         client = new KVClient(hostname, 8080);
-        assertNull(client.get("foo"));  
+        try {
+        	client.get("foo");
+        	fail("NO_SUCH_KEY Exception not received!");
+        } catch(KVException e) {
+        	assertEquals(KVConstants.ERROR_NO_SUCH_KEY, e.getKVMessage().getMessage());
+        }
     }
 	
 	@Test(timeout = 30000)
@@ -96,7 +101,7 @@ public class MultipleClientTest {
 					        	client.put("key", Integer.toString(i));
 					        	//System.out.println("thread "+Integer.toString(i));
 					        	//System.out.println("thread get "+client.get("key"));
-					        	Thread.sleep(210);
+					        	Thread.sleep(200);
 					        }
 						} catch (KVException e) {
 							e.printStackTrace();
@@ -132,16 +137,22 @@ public class MultipleClientTest {
 		Set<String> st = new HashSet<String>();
         while (true) {
         	try {
-				Thread.sleep(10);
+				Thread.sleep(15);
 			} catch (InterruptedException e) { 
-				e.printStackTrace();
+				//e.printStackTrace();
 			}
-        	String tmp = client.get("key");
+        	String tmp = null;
+        	try {
+        		tmp = client.get("key");
+        	} catch(Exception e) {
+        		tmp = null;
+        	}
         	//System.out.println("main "+tmp);
         	if (tmp!=null)
         		st.add(tmp);
         		
         	if (st.size() == 10) break;
+        	if (!thread1.isAlive() && !thread2.isAlive()) break;
         }
         
         assertEquals(st.size(), 10);

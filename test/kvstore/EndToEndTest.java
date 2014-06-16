@@ -1,6 +1,6 @@
 package kvstore;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
 
@@ -34,13 +34,28 @@ public class EndToEndTest extends EndToEndTemplate {
 		client.put("goood", "do");
 		assertEquals(client.get("goood"), "do");
 		client.del("goood");
-        assertEquals(client.get("goood"), null);
+		try {
+			client.get("goood");
+			fail("NO_SUCH_KEY Exception not received!");
+		} catch(KVException e) {
+			assertEquals(KVConstants.ERROR_NO_SUCH_KEY, e.getKVMessage().getMessage());
+		}
     }
 	
 	@Test
     public void deleteNoneExistKey() throws KVException {
-		client.del("goood");
-        assertEquals(client.get("goood"), null);
+		try {
+			client.del("goood");
+			fail("NO_SUCH_KEY Exception not received!");
+		} catch(KVException e) {
+			assertEquals(KVConstants.ERROR_NO_SUCH_KEY, e.getKVMessage().getMessage());
+		}
+		try {
+			client.get("goood");
+			fail("NO_SUCH_KEY Exception not received!");
+		} catch(KVException e) {
+			assertEquals(KVConstants.ERROR_NO_SUCH_KEY, e.getKVMessage().getMessage());
+		}
     }
 
 }
