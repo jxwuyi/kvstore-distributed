@@ -185,64 +185,66 @@ public class TPCMaster {
     		repInd[1] = ( repInd[0] + 1 ) % numSlaves;
     		// TODO: run the following code concurrently
     		boolean commit = true;
-    		try {
-    			// sequentially send request to replicas
-    			for(int i = 0; i < repInd.length; ++ i) {
-    				Socket sock = null;
-    				TPCSlaveInfo slave = slaves.get(repInd[i]);
-    				try {
-    					sock = slave.connectHost(TIMEOUT);
-    					msg.sendMessage(sock); // send request
-    					KVMessage resp = new KVMessage(sock); // receive response
-    					if(!KVConstants.READY.equals(resp.getMsgType())) // not ready
-    						commit = false;
-    				} finally {
-    					if(sock != null) {
-    						slave.closeHost(sock);
-    					}
-    				}
-    			}
-    		} catch(Exception e) {
-    			commit = false;
-    		}
-    		
-    		// phase-2 commit
-    		KVMessage decision = null;
-    		if(commit) {
-    			decision = new KVMessage(KVConstants.COMMIT);
-    			
-    			// update Cache
-    			if(isPutReq)
-    				masterCache.put(msg.getKey(), msg.getValue()); // put
-    			else
-    				masterCache.del(msg.getKey()); // del
-    		}
-    		else decision = new KVMessage(KVConstants.ABORT);
-    		
-    		for(int i=0;i<repInd.length;++i) {
-    			// NOTE: have to get every time! The object in slaves may be replaced
-    			TPCSlaveInfo slave = slaves.get(repInd[i]);
-    			while(true) { // send decision until receive an response
-    				Socket sock = null;
-    				KVMessage resp = null;
-    				try {
-    					sock = slave.connectHost(TIMEOUT);
-    					decision.sendMessage(sock);
-    					resp = new KVMessage(sock);
-    				} catch(Exception e) {
-    					continue; // ignore and continue
-    				} finally {
-    					if(sock != null)
-    						slave.closeHost(sock);
-    				}
-    				if(KVConstants.ACK.equals(resp.getMsgType()))
-    					break;
-    				
-    				// print to the console
-    				System.err.println("Internal Error: replica replied <"+resp.getMsgType()+"> instead of <ACK> in phase-2 commits!");
-    				throw new KVException(KVConstants.ERROR_INVALID_FORMAT);
-    			}
-    		}
+    		do { // keep performing TPC until commit
+	    		try {
+	    			// sequentially send request to replicas
+	    			for(int i = 0; i < repInd.length; ++ i) {
+	    				Socket sock = null;
+	    				TPCSlaveInfo slave = slaves.get(repInd[i]);
+	    				try {
+	    					sock = slave.connectHost(TIMEOUT);
+	    					msg.sendMessage(sock); // send request
+	    					KVMessage resp = new KVMessage(sock); // receive response
+	    					if(!KVConstants.READY.equals(resp.getMsgType())) // not ready
+	    						commit = false;
+	    				} finally {
+	    					if(sock != null) {
+	    						slave.closeHost(sock);
+	    					}
+	    				}
+	    			}
+	    		} catch(Exception e) {
+	    			commit = false;
+	    		}
+	    		
+	    		// phase-2 commit
+	    		KVMessage decision = null;
+	    		if(commit) {
+	    			decision = new KVMessage(KVConstants.COMMIT);
+	    			
+	    			// update Cache
+	    			if(isPutReq)
+	    				masterCache.put(msg.getKey(), msg.getValue()); // put
+	    			else
+	    				masterCache.del(msg.getKey()); // del
+	    		}
+	    		else decision = new KVMessage(KVConstants.ABORT);
+	    		
+	    		for(int i=0;i<repInd.length;++i) {
+	    			// NOTE: have to get every time! The object in slaves may be replaced
+	    			TPCSlaveInfo slave = slaves.get(repInd[i]);
+	    			while(true) { // send decision until receive an response
+	    				Socket sock = null;
+	    				KVMessage resp = null;
+	    				try {
+	    					sock = slave.connectHost(TIMEOUT);
+	    					decision.sendMessage(sock);
+	    					resp = new KVMessage(sock);
+	    				} catch(Exception e) {
+	    					continue; // ignore and continue
+	    				} finally {
+	    					if(sock != null)
+	    						slave.closeHost(sock);
+	    				}
+	    				if(KVConstants.ACK.equals(resp.getMsgType()))
+	    					break;
+	    				
+	    				// print to the console
+	    				System.err.println("Internal Error: replica replied <"+resp.getMsgType()+"> instead of <ACK> in phase-2 commits!");
+	    				throw new KVException(KVConstants.ERROR_INVALID_FORMAT);
+	    			}
+	    		}
+    		} while(!commit);
     	} finally {
     		lock.unlock();
     	}
