@@ -230,8 +230,8 @@ public class TPCMaster {
     		
     		for(int i=0;i<repInd.length;++i) {
     			// NOTE: have to get every time! The object in slaves may be replaced
-    			TPCSlaveInfo slave = slaves.get(repInd[i]);
     			while(true) { // send decision until receive an response
+        			TPCSlaveInfo slave = slaves.get(repInd[i]);
     				Socket sock = null;
     				KVMessage resp = null;
     				try {
