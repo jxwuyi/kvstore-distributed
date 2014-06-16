@@ -25,6 +25,10 @@ public class TPCSlaveInfo {
     	try {
     		int pos1 = info.indexOf('@');
     		int pos2 = info.indexOf(':', pos1);
+    		
+    		if(pos1 < 0 || pos2 < 0)
+    			throw new KVException(KVConstants.ERROR_INVALID_FORMAT);
+    		
     		slaveID = Long.parseLong(info.substring(0, pos1));
     		hostname = info.substring(pos1+1, pos2);
     		port = Integer.parseInt(info.substring(pos2+1));
