@@ -208,7 +208,15 @@ public class TPCMaster {
     		
     		// phase-2 commit
     		KVMessage decision = null;
-    		if(commit) decision = new KVMessage(KVConstants.COMMIT);
+    		if(commit) {
+    			decision = new KVMessage(KVConstants.COMMIT);
+    			
+    			// update Cache
+    			if(isPutReq)
+    				masterCache.put(msg.getKey(), msg.getValue()); // put
+    			else
+    				masterCache.del(msg.getKey()); // del
+    		}
     		else decision = new KVMessage(KVConstants.ABORT);
     		
     		for(int i=0;i<repInd.length;++i) {
@@ -231,7 +239,7 @@ public class TPCMaster {
     					break;
     				
     				// print to the console
-    				System.err.println("Internal Error: replica replid <"+resp.getMsgType()+"> instead of <ACK> in phase-2 commits!");
+    				System.err.println("Internal Error: replica replied <"+resp.getMsgType()+"> instead of <ACK> in phase-2 commits!");
     				throw new KVException(KVConstants.ERROR_INVALID_FORMAT);
     			}
     		}
@@ -276,6 +284,9 @@ public class TPCMaster {
     				slave = findSuccessor(slave); // secondary replica
     				ret = getFromReplica(msg, slave);
     			}
+    			// update Cache
+    			if(ret != null)
+    				masterCache.put(key, ret);
     		}
     	} finally {
     		lock.unlock();

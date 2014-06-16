@@ -87,6 +87,9 @@ public class KVServer implements KeyValueInterface {
     	finally{
     		lock.unlock();
     	}
+    	
+    	if(ret == null)
+    		throw new KVException(KVConstants.ERROR_NO_SUCH_KEY);
         return ret;
     }
 
@@ -129,6 +132,27 @@ public class KVServer implements KeyValueInterface {
         	return false;
         }
         return true;
+    }
+    
+    /**
+     * Added by : Yi Wu
+     * Check whether the put request (key, value) is valid
+     * 
+     * @param key Key of the put request
+     * @param value Value of the put request
+     * @return Validness of the request
+     * @throws KVException containing the error message
+     */
+    public boolean isValidPut(String key, String value) throws KVException {
+    	if(key == null || key.length() == 0)
+    		throw new KVException(KVConstants.ERROR_INVALID_KEY);
+    	if(value == null || value.length() == 0)
+    		throw new KVException(KVConstants.ERROR_INVALID_VALUE);
+    	if(key.length() > MAX_KEY_SIZE) 
+    		throw new KVException(KVConstants.ERROR_OVERSIZED_KEY);
+    	if(value.length() > MAX_VAL_SIZE)
+    		throw new KVException(KVConstants.ERROR_OVERSIZED_VALUE);
+    	return true;
     }
 
     /** This method is purely for convenience and will not be tested. */
