@@ -185,6 +185,7 @@ public class TPCMaster {
     		repInd[1] = ( repInd[0] + 1 ) % numSlaves;
     		// TODO: run the following code concurrently
     		boolean commit = true;
+    		String errorMsg = null; // denote the error message to return
     		try {
     			// sequentially send request to replicas
     			for(int i = 0; i < repInd.length; ++ i) {
@@ -194,8 +195,14 @@ public class TPCMaster {
     					sock = slave.connectHost(TIMEOUT);
     					msg.sendMessage(sock); // send request
     					KVMessage resp = new KVMessage(sock); // receive response
-    					if(!KVConstants.READY.equals(resp.getMsgType())) // not ready
-    						commit = false;
+    					if(!KVConstants.READY.equals(resp.getMsgType())) { // not ready
+    						commit = false; // some error occurs
+    						errorMsg = resp.getMessage();
+    					}
+    				} catch(KVException e) {
+    					commit = false; // connection not correct
+    					if(errorMsg == null) // no other error message
+    						errorMsg = e.getKVMessage().getMessage();
     				} finally {
     					if(sock != null) {
     						slave.closeHost(sock);
@@ -204,6 +211,8 @@ public class TPCMaster {
     			}
     		} catch(Exception e) {
     			commit = false;
+    			if(errorMsg == null)
+    				errorMsg = e.getMessage();
     		}
     		
     		// phase-2 commit
@@ -243,6 +252,9 @@ public class TPCMaster {
     				throw new KVException(KVConstants.ERROR_INVALID_FORMAT);
     			}
     		}
+    		
+    		if(!commit) // abort, a Exception should be thrown
+    			throw new KVException(errorMsg);
     	} finally {
     		lock.unlock();
     	}

@@ -81,7 +81,9 @@ public class KVClient implements KeyValueInterface {
     		msg.sendMessage(sock);
     	
     		// Receive Response
-    		new KVMessage(sock); // we don't need to print the success msg
+    		KVMessage resp = new KVMessage(sock); // we don't need to print the success msg
+    		if(!KVConstants.SUCCESS.equals(resp.getMessage())) // not success
+    			throw new KVException(resp.getMessage()); // throw an exception
     	} finally {
     		if(sock != null) closeHost(sock);
     	}
@@ -111,6 +113,9 @@ public class KVClient implements KeyValueInterface {
 	    	
 	    	// Receive Response
 	    	KVMessage resp = new KVMessage(sock);
+	    	
+	    	if(resp.getValue() == null) // if no such key, throw an exception
+	    		throw new KVException(resp.getMessage());
 	    	return resp.getValue();
     	} finally {
     		if(sock != null) closeHost(sock);
@@ -139,7 +144,9 @@ public class KVClient implements KeyValueInterface {
     		msg.sendMessage(sock);
     	
     		// Receive Response
-    		new KVMessage(sock); // we don't need to print the success msg
+    		KVMessage resp = new KVMessage(sock); // we don't need to print the success msg
+    		if(!KVConstants.SUCCESS.equals(resp.getMessage())) // not success
+    			throw new KVException(resp.getMessage()); // throw an exception
     	} finally {
     		if(sock != null) closeHost(sock);
     	}

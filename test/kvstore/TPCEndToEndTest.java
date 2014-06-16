@@ -19,15 +19,27 @@ public class TPCEndToEndTest extends TPCEndToEndTemplate {
 	        assertEquals("get failed", client.get("foo"), "bar");
 	        client.put("foo", "okay");
 	        assertEquals(client.get("foo"), "okay");
-	        assertNull(client.get("okay"));
+	        try {
+	        	client.get("okay");
+	        	fail("NO_SUCH_KEY Exception not thrown!");
+	        } catch(KVException e) {
+	        	assertEquals(KVConstants.RESP, e.getKVMessage().getMsgType());
+	    		assertEquals(KVConstants.ERROR_NO_SUCH_KEY, e.getKVMessage().getMessage());
+	        }
 	        client.del("foo");
-	        assertNull(client.get("foo"));
+	        try {
+	        	client.get("foo");
+	        	fail("NO_SUCH_KEY Exception not thrown!");
+	        } catch(KVException e) {
+	        	assertEquals(KVConstants.RESP, e.getKVMessage().getMsgType());
+	    		assertEquals(KVConstants.ERROR_NO_SUCH_KEY, e.getKVMessage().getMessage());
+	        }
 	        client.put("foo", "1");
 	        assertEquals("1", client.get("foo"));
 	        client.put("okay", "correct");
 	        assertEquals("correct", client.get("okay"));
     	} catch (Exception e) {
-    		fail("Error Occurred!");
+    		fail("Error Occurred! message = " + e.getMessage());
     	}
     }
 
